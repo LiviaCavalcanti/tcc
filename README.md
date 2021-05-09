@@ -7,3 +7,10 @@ Esse script gera carga de trabalho para objetos no S3. Para cada dia, ele consid
 Em `simul_tcc_py/`, também tem análises exploratórias feitas sobre o assunto. 
 
 Um simulador de custo do S3 e do modelo proposto no trabalho está em `tree_algorithm.go`. Para executar a carga desejada, mude o arquivo de entrada definido no próprio script.
+
+Obs.: Ambos os scripts não recebem argumentos e podem ser reproduzidos por
+```
+python simul_tcc_py/sample_generator.py
+go tree_algorithm.go
+```
+Caso seja necessário alguma mudança, modifique o arquivo. 

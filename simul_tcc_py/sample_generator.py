@@ -3,6 +3,7 @@ import numpy as np
 import json
 import math
 import toolz
+import argparse
 
 def generateDataUniform(low, high, sample_size):
     randSampleGet = np.random.uniform(low, high, sample_size)
@@ -65,6 +66,12 @@ def multiplyingRequests(arr, factor=1000):
 
 if __name__ == "__main__":
     
+    parser = argparse.ArgumentParser(description='Sample type to be displayed or saved into a file, in case of MULTIPLY option. Remember to update the script before running it to get the expected output.')
+    parser.add_argument('type', type=str, 
+                    help='Choose between BY_FREQUENCY, BY_DISTRIBUTION, INFREQUENT and MULTIPLY')
+
+    args = parser.parse_args()
+    sample_type = str(args.type)
     # number of days for the test interval
     interval_size = 1000
     # sample size of a random distribution used to build the sample
@@ -81,48 +88,51 @@ if __name__ == "__main__":
     annual = 355
     total_rand_access = 60
     periods = [mensal, biannual, annual]
-    for period in periods:
-        
+   
+    if sample_type == "BY_FREQUENCY":
+        for period in periods:
+            
+            default = dict(zip(np.arange(1, interval_size + 1).tolist(), [[0,0] for i in range(interval_size)]))
+            get_dict = frequencyGenerator(period, get, default, randRange=20)
+            for period1 in periods:
+                full_dict = frequencyGenerator(period1, post, get_dict, randRange=20)
+        print(full_dict)
+
+    elif sample_type == "BY_DISTRIBUTION":    
+        # a way of produce access sample according to a distribution
+        a=1.3
+        sample_zipf = np.random.zipf(a, 1000)
+        sample_get_zipf = np.random.zipf(1.98, 1000)
+        sampleDataLog = generateDataLog(10, dist_type="log")
+        sampleDataLog = generator(interval_size, sample_size, dist_type="log")
+        print("samples ",sampleDataLog)
+
+    elif sample_type == "INFREQUENT":
+        # infrequent access
+        total_rand_access = 60
+        interval_mx_size=5
         default = dict(zip(np.arange(1, interval_size + 1).tolist(), [[0,0] for i in range(interval_size)]))
-        get_dict = frequencyGenerator(period, get, default, randRange=20)
-        for period1 in periods:
-            full_dict = frequencyGenerator(period1, post, get_dict, randRange=20)
 
-    
-    # a way of produce the continuous access sample
-    # another way is populate the whole sample
-    a=1.3
-    sample_zipf = np.random.zipf(a, 1000)
-    sample_get_zipf = np.random.zipf(1.98, 1000)
-    sampleDataLog = generateDataLog(10, dist_type="log")
-    sampleDataLog = generator(interval_size, sample_size, dist_type="log")
-    print("samples ",sampleDataLog)
-
-
-    # infrequent access
-    total_rand_access = 60
-    interval_mx_size=5
-    print(interval_size)
-    default = dict(zip(np.arange(1, interval_size + 1).tolist(), [[0,0] for i in range(interval_size)]))
-    for i in random.sample(range(interval_size), total_rand_access):
-        access_day = i
-        default[access_day][get] = random.randrange(1,500)
-        default[access_day][post] = random.randrange(1,500)
-        interval_random_size = random.randrange(1,interval_mx_size)
-        while( interval_random_size >0 and access_day+1 < interval_size):
+        for i in random.sample(range(interval_size), total_rand_access):
+            access_day = i
             default[access_day][get] = random.randrange(1,500)
             default[access_day][post] = random.randrange(1,500)
-            access_day+=1
-            interval_random_size-=1
-    print(default)
+            interval_random_size = random.randrange(1,interval_mx_size)
+            while( interval_random_size >0 and access_day+1 < interval_size):
+                default[access_day][get] = random.randrange(1,500)
+                default[access_day][post] = random.randrange(1,500)
+                access_day+=1
+                interval_random_size-=1
+        print(default)
 
-    # if you want to multiply a previous result to have a new dimension for the same sample
-    readFromFile = "your_path/here"
-    with open(readFromFile) as f:
-        data = json.load(f)
+    elif sample_type == "MULTIPLY":
+        # if you want to multiply a previous result to have a new dimension for the same sample
+        readFromFile = "your_path/here"
+        with open(readFromFile) as f:
+            data = json.load(f)
 
-    sample = toolz.valmap(multiplyingRequests, data['trace'][0]['requests'])
-    print(sample)
-    final_dict = {"trace": [{"objSize": 10,"requests":sample}]}
-    f = open("previous_file.json", "w")
-    json.dump(final_dict, f)
+        sample = toolz.valmap(multiplyingRequests, data['trace'][0]['requests'])
+        print(sample)
+        final_dict = {"trace": [{"objSize": 10,"requests":sample}]}
+        f = open("previous_file.json", "w")
+        json.dump(final_dict, f)
